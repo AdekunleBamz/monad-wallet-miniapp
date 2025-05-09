@@ -27,9 +27,8 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [balance, setBalance] = useState('0')
-  const [status, setStatus] = useState('')
 
-  // Fetch balance when component mounts
+  // Fetch balance function
   const fetchBalance = async () => {
     try {
       const provider = new ethers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
@@ -47,11 +46,12 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
     setAmount(maxAmount > 0 ? maxAmount.toString() : '0')
   }
 
+  // Fetch balance on mount and when address changes
   useEffect(() => {
     if (address) {
-      onTransactionComplete()
+      fetchBalance()
     }
-  }, [address, onTransactionComplete])
+  }, [address])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,11 +98,6 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
     }
   }
 
-  // Fetch balance on mount
-  useEffect(() => {
-    fetchBalance()
-  }, [address]) // Add address as dependency to refetch when it changes
-
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <h2 className="text-lg font-semibold mb-4">Send Tokens</h2>
@@ -116,28 +111,44 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
             className="w-full px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter recipient address"
+            placeholder="0x..."
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Amount (MON)
-          </label>
-          <input
-            type="text"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter amount"
-            required
-          />
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium">
+              Amount (MON)
+            </label>
+            <button
+              type="button"
+              onClick={setMaxAmount}
+              className="text-sm text-blue-500 hover:text-blue-400"
+            >
+              MAX
+            </button>
+          </div>
+          <div className="relative">
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0.0"
+              step="0.000000000000000001"
+              min="0"
+              required
+            />
+            <div className="absolute right-3 top-2 text-sm text-gray-400">
+              Balance: {balance} MON
+            </div>
+          </div>
         </div>
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !recipient || !amount}
           className={`w-full py-2 px-4 rounded-lg ${
-            isLoading
+            isLoading || !recipient || !amount
               ? 'bg-gray-600 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700'
           } transition-colors duration-200`}
