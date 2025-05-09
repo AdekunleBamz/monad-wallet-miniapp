@@ -26,6 +26,7 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
   const [amount, setAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [balance, setBalance] = useState('0')
+  const [status, setStatus] = useState('')
 
   // Fetch balance when component mounts
   const fetchBalance = async () => {
@@ -47,10 +48,13 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!recipient || !amount) return
+    if (!amount || !recipient) return
 
-    setIsLoading(true)
     try {
+      if (!window.ethereum) {
+        throw new Error('No Ethereum provider found. Please install MetaMask or another Web3 wallet.')
+      }
+
       // Use the browser provider for signing transactions
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
@@ -60,19 +64,15 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
         value: ethers.parseEther(amount)
       })
 
-      console.log('Transaction sent:', tx.hash)
+      setStatus('Transaction sent! Waiting for confirmation...')
       await tx.wait()
-      alert('Transaction sent successfully!')
-      
-      setRecipient('')
+      setStatus('Transaction confirmed!')
       setAmount('')
-      fetchBalance() // Refresh local balance
-      onTransactionComplete() // Notify parent to refresh main balance
-    } catch (error: any) {
+      setRecipient('')
+      onTransactionComplete?.()
+    } catch (error) {
       console.error('Error sending transaction:', error)
-      alert(error.message || 'Error sending transaction. Please try again.')
-    } finally {
-      setIsLoading(false)
+      setStatus(error instanceof Error ? error.message : 'Failed to send transaction')
     }
   }
 
@@ -133,6 +133,7 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
           {isLoading ? 'Sending...' : 'Send'}
         </button>
       </form>
+      {status && <p className="mt-4 text-center text-sm text-gray-400">{status}</p>}
     </div>
   )
 } 
