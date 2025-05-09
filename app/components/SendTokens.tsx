@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 
 interface SendTokensProps {
@@ -77,9 +77,9 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
   }
 
   // Fetch balance on mount
-  useState(() => {
+  useEffect(() => {
     fetchBalance()
-  }, [])
+  }, [address]) // Add address as dependency to refetch when it changes
 
   return (
     <div className="bg-gray-800 rounded-lg p-6">

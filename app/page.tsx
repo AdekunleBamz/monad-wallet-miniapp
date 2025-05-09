@@ -56,19 +56,37 @@ export default function Home() {
 
   const connectWallet = async () => {
     try {
-      if (typeof window.ethereum !== 'undefined') {
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts',
-        })
-        setAddress(accounts[0])
-        setIsConnected(true)
-        await checkNetwork()
-        if (accounts[0]) fetchBalance(accounts[0])
-      } else {
-        alert('Please install a Web3 wallet like MetaMask!')
+      if (typeof window.ethereum === 'undefined') {
+        throw new Error('Please install a Web3 wallet like MetaMask!')
       }
+
+      // Request account access
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts',
+      })
+
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No accounts found. Please connect your wallet.')
+      }
+
+      setAddress(accounts[0])
+      setIsConnected(true)
+      
+      // Check and switch network if needed
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+      if (chainId !== MONAD_NETWORK.chainId) {
+        await switchToMonadNetwork()
+      } else {
+        setIsCorrectNetwork(true)
+      }
+
+      // Fetch initial balance
+      await fetchBalance(accounts[0])
     } catch (error) {
       console.error('Error connecting wallet:', error)
+      alert(error instanceof Error ? error.message : 'Failed to connect wallet')
+      setIsConnected(false)
+      setAddress('')
     }
   }
 
@@ -92,14 +110,27 @@ export default function Home() {
   // Check wallet connection on page load
   useEffect(() => {
     const checkConnection = async () => {
-      if (typeof window.ethereum !== 'undefined') {
+      try {
+        if (typeof window.ethereum === 'undefined') {
+          return
+        }
+
         const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-        if (accounts.length > 0) {
+        if (accounts && accounts.length > 0) {
           setAddress(accounts[0])
           setIsConnected(true)
-          await checkNetwork()
-          fetchBalance(accounts[0])
+          
+          // Check network
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+          setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
+          
+          // Fetch balance
+          await fetchBalance(accounts[0])
         }
+      } catch (error) {
+        console.error('Error checking wallet connection:', error)
+        setIsConnected(false)
+        setAddress('')
       }
     }
     checkConnection()
