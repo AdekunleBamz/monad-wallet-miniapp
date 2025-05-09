@@ -33,57 +33,100 @@ export default function Home() {
   }
 
   const switchToMonadNetwork = async () => {
+    console.log('Attempting to switch network...')
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: MONAD_NETWORK.chainId }],
       })
+      console.log('Network switch successful')
       setIsCorrectNetwork(true)
     } catch (switchError: any) {
+      console.error('Network switch error:', switchError)
       if (switchError.code === 4902) {
+        console.log('Network not found, attempting to add...')
         try {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [MONAD_NETWORK],
           })
+          console.log('Network added successfully')
           setIsCorrectNetwork(true)
         } catch (addError) {
           console.error('Error adding Monad network:', addError)
+          throw addError
         }
+      } else {
+        throw switchError
       }
     }
   }
 
   const connectWallet = async () => {
+    console.log('Starting wallet connection...')
     try {
       if (typeof window.ethereum === 'undefined') {
-        throw new Error('Please install a Web3 wallet like MetaMask!')
+        console.error('No ethereum provider found')
+        throw new Error('Please install a Web3 wallet!')
       }
 
-      // Request account access
+      // Force disconnect first
+      disconnectWallet()
+
+      // Small delay to ensure disconnect is processed
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Request account access with a specific request
+      console.log('Requesting account access...')
+      try {
+        // First try to disconnect from the provider if possible
+        if (window.ethereum.disconnect) {
+          await window.ethereum.disconnect()
+        }
+      } catch (e) {
+        console.log('Disconnect not supported by provider')
+      }
+
+      // Now request accounts which should trigger the popup
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
+        params: [], // Empty params to ensure fresh request
       })
+      console.log('Accounts received:', accounts)
 
       if (!accounts || accounts.length === 0) {
+        console.error('No accounts found')
         throw new Error('No accounts found. Please connect your wallet.')
       }
 
+      console.log('Setting address and connection state...')
       setAddress(accounts[0])
       setIsConnected(true)
       
       // Check and switch network if needed
+      console.log('Checking network...')
       const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+      console.log('Current chainId:', chainId, 'Expected:', MONAD_NETWORK.chainId)
+      
       if (chainId !== MONAD_NETWORK.chainId) {
+        console.log('Switching to Monad network...')
         await switchToMonadNetwork()
       } else {
+        console.log('Already on correct network')
         setIsCorrectNetwork(true)
       }
 
       // Fetch initial balance
+      console.log('Fetching initial balance...')
       await fetchBalance(accounts[0])
+      console.log('Wallet connection complete')
     } catch (error) {
-      console.error('Error connecting wallet:', error)
+      console.error('Detailed wallet connection error:', error)
+      if (error instanceof Error) {
+        console.error('Error name:', error.name)
+        console.error('Error message:', error.message)
+        console.error('Error stack:', error.stack)
+      }
       alert(error instanceof Error ? error.message : 'Failed to connect wallet')
       setIsConnected(false)
       setAddress('')
@@ -91,10 +134,20 @@ export default function Home() {
   }
 
   const disconnectWallet = () => {
+    console.log('Disconnecting wallet...')
     setAddress('')
     setBalance('0')
     setIsConnected(false)
     setIsCorrectNetwork(false)
+    
+    // Try to disconnect from the provider if possible
+    if (window.ethereum?.disconnect) {
+      try {
+        window.ethereum.disconnect()
+      } catch (e) {
+        console.log('Provider disconnect not supported')
+      }
+    }
   }
 
   const fetchBalance = async (walletAddress: string) => {
@@ -112,16 +165,28 @@ export default function Home() {
     const checkConnection = async () => {
       try {
         if (typeof window.ethereum === 'undefined') {
+          console.log('No ethereum provider available')
           return
         }
 
+        // Only check if we're already connected, don't request accounts
+        const isConnected = window.ethereum.isConnected?.() || false
+        if (!isConnected) {
+          console.log('Wallet not connected')
+          return
+        }
+
+        // If connected, get the current account
         const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        console.log('Initial accounts check:', accounts)
+
         if (accounts && accounts.length > 0) {
           setAddress(accounts[0])
           setIsConnected(true)
           
           // Check network
           const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+          console.log('Initial network check:', chainId)
           setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
           
           // Fetch balance
@@ -138,27 +203,30 @@ export default function Home() {
 
   // Listen for network changes
   useEffect(() => {
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.on('chainChanged', async (chainId: string) => {
-        setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
-        if (address) fetchBalance(address)
-      })
+    if (typeof window.ethereum === 'undefined') return
 
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
-        if (accounts.length > 0) {
-          setAddress(accounts[0])
-          fetchBalance(accounts[0])
-        } else {
-          disconnectWallet()
-        }
-      })
+    const handleChainChanged = async (chainId: string) => {
+      console.log('Chain changed:', chainId)
+      setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
+      if (address) fetchBalance(address)
     }
 
-    return () => {
-      if (typeof window.ethereum !== 'undefined') {
-        window.ethereum.removeListener('chainChanged', () => {})
-        window.ethereum.removeListener('accountsChanged', () => {})
+    const handleAccountsChanged = (accounts: string[]) => {
+      console.log('Accounts changed:', accounts)
+      if (accounts.length > 0) {
+        setAddress(accounts[0])
+        fetchBalance(accounts[0])
+      } else {
+        disconnectWallet()
       }
+    }
+
+    window.ethereum.on('chainChanged', handleChainChanged)
+    window.ethereum.on('accountsChanged', handleAccountsChanged)
+
+    return () => {
+      window.ethereum.removeListener('chainChanged', handleChainChanged)
+      window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
     }
   }, [address])
 
