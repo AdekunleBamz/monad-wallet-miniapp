@@ -22,9 +22,10 @@ const MONAD_NETWORK = {
 }
 
 export function SendTokens({ address, onTransactionComplete }: SendTokensProps) {
-  const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
+  const [recipient, setRecipient] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const [balance, setBalance] = useState('0')
   const [status, setStatus] = useState('')
 
@@ -46,33 +47,54 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
     setAmount(maxAmount > 0 ? maxAmount.toString() : '0')
   }
 
-  const handleSend = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (address) {
+      onTransactionComplete()
+    }
+  }, [address, onTransactionComplete])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!amount || !recipient) return
+    setError('')
+    setIsLoading(true)
 
     try {
       if (!window.ethereum) {
-        throw new Error('No Ethereum provider found. Please install MetaMask or another Web3 wallet.')
+        throw new Error('No wallet found!')
       }
 
-      // Use the browser provider for signing transactions
       const provider = new ethers.BrowserProvider(window.ethereum)
       const signer = await provider.getSigner()
       
+      // Validate recipient address
+      if (!ethers.isAddress(recipient)) {
+        throw new Error('Invalid recipient address')
+      }
+
+      // Convert amount to Wei
+      const amountInWei = ethers.parseEther(amount)
+      
+      // Create transaction
       const tx = await signer.sendTransaction({
         to: recipient,
-        value: ethers.parseEther(amount)
+        value: amountInWei
       })
 
-      setStatus('Transaction sent! Waiting for confirmation...')
-      await tx.wait()
-      setStatus('Transaction confirmed!')
+      console.log('Transaction sent:', tx.hash)
+      await tx.wait() // Wait for transaction to be mined
+      console.log('Transaction confirmed')
+
+      // Clear form
       setAmount('')
       setRecipient('')
-      onTransactionComplete?.()
-    } catch (error) {
-      console.error('Error sending transaction:', error)
-      setStatus(error instanceof Error ? error.message : 'Failed to send transaction')
+      
+      // Refresh balance
+      onTransactionComplete()
+    } catch (err) {
+      console.error('Transaction error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to send transaction')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -84,7 +106,7 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <h2 className="text-lg font-semibold mb-4">Send Tokens</h2>
-      <form onSubmit={handleSend} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-2">
             Recipient Address
@@ -93,47 +115,37 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
             type="text"
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="0x..."
+            className="w-full px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter recipient address"
+            required
           />
         </div>
         <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium">
-              Amount (MON)
-            </label>
-            <button
-              type="button"
-              onClick={setMaxAmount}
-              className="text-sm text-primary hover:text-secondary"
-            >
-              MAX
-            </button>
-          </div>
-          <div className="relative">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="0.0"
-              step="0.000000000000000001"
-              min="0"
-            />
-            <div className="absolute right-3 top-2 text-sm text-gray-400">
-              Balance: {balance} MON
-            </div>
-          </div>
+          <label className="block text-sm font-medium mb-2">
+            Amount (MON)
+          </label>
+          <input
+            type="text"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter amount"
+            required
+          />
         </div>
         <button
           type="submit"
-          disabled={isLoading || !recipient || !amount}
-          className="w-full bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading}
+          className={`w-full py-2 px-4 rounded-lg ${
+            isLoading
+              ? 'bg-gray-600 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          } transition-colors duration-200`}
         >
           {isLoading ? 'Sending...' : 'Send'}
         </button>
       </form>
-      {status && <p className="mt-4 text-center text-sm text-gray-400">{status}</p>}
+      {error && <p className="mt-4 text-center text-sm text-red-500">{error}</p>}
     </div>
   )
 } 
