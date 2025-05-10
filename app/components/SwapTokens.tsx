@@ -17,7 +17,7 @@ const ROUTER_ADDRESS = '0x...' // TODO: Add actual router address
 
 // Common token addresses on Monad Testnet (replace with actual addresses)
 const TOKENS = {
-  WETH: '0x...', // TODO: Add actual WETH address
+  MON: '0x...', // Native MON token
   USDC: '0x...', // TODO: Add actual USDC address
   // Add more tokens as needed
 }
@@ -29,7 +29,7 @@ interface SwapTokensProps {
 }
 
 export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) {
-  const [fromToken, setFromToken] = useState<TokenKey>('WETH') // Default to WETH
+  const [fromToken, setFromToken] = useState<TokenKey>('MON') // Default to MON
   const [toToken, setToToken] = useState<TokenKey>('USDC')
   const [amount, setAmount] = useState('')
   const [slippage, setSlippage] = useState('0.5') // Default 0.5%
@@ -74,8 +74,8 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
       const provider = new ethers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
       const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider)
 
-      const path = fromToken === 'WETH' 
-        ? [TOKENS.WETH, TOKENS[toToken]]
+      const path = fromToken === 'MON' 
+        ? [TOKENS.MON, TOKENS[toToken]]
         : [TOKENS[fromToken], TOKENS[toToken]]
 
       const amountIn = ethers.parseEther(inputAmount)
@@ -109,8 +109,8 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
       const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer)
 
       const amountIn = ethers.parseEther(amount)
-      const path = fromToken === 'WETH' 
-        ? [TOKENS.WETH, TOKENS[toToken]]
+      const path = fromToken === 'MON' 
+        ? [TOKENS.MON, TOKENS[toToken]]
         : [TOKENS[fromToken], TOKENS[toToken]]
 
       // Calculate minimum amount out with slippage
@@ -121,8 +121,8 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
       const deadline = Math.floor(Date.now() / 1000) + 300 // 5 minutes
 
       let tx
-      if (fromToken === 'WETH') {
-        // Swap ETH for tokens
+      if (fromToken === 'MON') {
+        // Swap MON for tokens
         tx = await router.swapExactETHForTokens(
           minAmountOut,
           path,
@@ -181,7 +181,7 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
               onChange={(e) => setFromToken(e.target.value as TokenKey)}
               className="px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="WETH">WETH</option>
+              <option value="MON">MON</option>
               {/* Add more tokens as they become available */}
             </select>
           </div>

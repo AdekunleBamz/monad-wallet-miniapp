@@ -57,8 +57,19 @@ export default function Home() {
 
   const checkNetwork = async () => {
     if (typeof window.ethereum !== 'undefined') {
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-      setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
+      try {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+        console.log('Current chainId:', chainId, 'Expected:', MONAD_NETWORK.chainId)
+        const isCorrect = chainId.toLowerCase() === MONAD_NETWORK.chainId.toLowerCase()
+        setIsCorrectNetwork(isCorrect)
+        if (isCorrect && address) {
+          // Fetch balance immediately when on correct network
+          await fetchBalance(address)
+        }
+      } catch (error) {
+        console.error('Error checking network:', error)
+        setIsCorrectNetwork(false)
+      }
     }
   }
 
@@ -225,15 +236,20 @@ export default function Home() {
 
     const handleChainChanged = async (chainId: string) => {
       console.log('Chain changed:', chainId)
-      setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
-      if (address) fetchBalance(address)
+      const isCorrect = chainId.toLowerCase() === MONAD_NETWORK.chainId.toLowerCase()
+      setIsCorrectNetwork(isCorrect)
+      if (isCorrect && address) {
+        // Fetch balance immediately when switching to correct network
+        await fetchBalance(address)
+      }
     }
 
-    const handleAccountsChanged = (accounts: string[]) => {
+    const handleAccountsChanged = async (accounts: string[]) => {
       console.log('Accounts changed:', accounts)
       if (accounts.length > 0) {
         setAddress(accounts[0])
-        fetchBalance(accounts[0])
+        // Check network and fetch balance when account changes
+        await checkNetwork()
       } else {
         disconnectWallet()
       }
@@ -242,6 +258,9 @@ export default function Home() {
     const ethereum = window.ethereum
     ethereum.on('chainChanged', handleChainChanged)
     ethereum.on('accountsChanged', handleAccountsChanged)
+
+    // Initial network check
+    checkNetwork()
 
     return () => {
       ethereum.removeListener('chainChanged', handleChainChanged)
