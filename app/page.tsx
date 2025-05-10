@@ -76,32 +76,17 @@ export default function Home() {
         throw new Error('Please install a Web3 wallet!')
       }
 
-      // Force disconnect first
-      disconnectWallet()
+      // Reset state first
+      setAddress('')
+      setBalance('0')
+      setIsConnected(false)
+      setIsCorrectNetwork(false)
 
-      // Small delay to ensure disconnect is processed
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Request account access with a specific request
+      // Request account access
       console.log('Requesting account access...')
-      try {
-        // Try to disconnect using a safe method
-        const provider = window.ethereum
-        if (provider && typeof provider.request === 'function') {
-          try {
-            await provider.request({ method: 'wallet_disconnect' })
-          } catch (e) {
-            console.log('Wallet disconnect not supported by provider')
-          }
-        }
-      } catch (e) {
-        console.log('Disconnect not supported by provider')
-      }
-
-      // Now request accounts which should trigger the popup
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
-        params: [], // Empty params to ensure fresh request
+        params: [],
       })
       console.log('Accounts received:', accounts)
 
@@ -146,20 +131,11 @@ export default function Home() {
 
   const disconnectWallet = () => {
     console.log('Disconnecting wallet...')
+    // Reset all state
     setAddress('')
     setBalance('0')
     setIsConnected(false)
     setIsCorrectNetwork(false)
-    
-    // Try to disconnect using a safe method
-    if (window.ethereum && typeof window.ethereum.request === 'function') {
-      try {
-        window.ethereum.request({ method: 'wallet_disconnect' })
-          .catch(e => console.log('Provider disconnect not supported'))
-      } catch (e) {
-        console.log('Provider disconnect not supported')
-      }
-    }
   }
 
   const fetchBalance = async (walletAddress: string) => {
