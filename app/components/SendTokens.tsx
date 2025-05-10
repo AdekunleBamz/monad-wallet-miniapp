@@ -2,23 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
+import { MONAD_NETWORK } from '../config/networks'
 
 interface SendTokensProps {
   address: string;
   onTransactionComplete: () => void;
-}
-
-// Monad network configuration
-const MONAD_NETWORK = {
-  chainId: '0x279F', // 10143 in hex
-  chainName: 'Monad Testnet',
-  nativeCurrency: {
-    name: 'MONAD',
-    symbol: 'MON',
-    decimals: 18
-  },
-  rpcUrls: ['https://monad-testnet.drpc.org'],
-  blockExplorerUrls: ['https://testnet.monadexplorer.com']
 }
 
 export function SendTokens({ address, onTransactionComplete }: SendTokensProps) {
@@ -31,6 +19,7 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
   // Fetch balance function
   const fetchBalance = async () => {
     try {
+      // Use our RPC URL directly
       const provider = new ethers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
       const balance = await provider.getBalance(address)
       setBalance(ethers.formatEther(balance))
@@ -63,7 +52,14 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
         throw new Error('No wallet found!')
       }
 
-      const provider = new ethers.BrowserProvider(window.ethereum)
+      // Force the provider to use our RPC URL
+      const provider = new ethers.BrowserProvider(window.ethereum, {
+        name: MONAD_NETWORK.chainName,
+        chainId: parseInt(MONAD_NETWORK.chainId, 16),
+        ensAddress: null,
+        _defaultProvider: (providers) => new providers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
+      })
+
       const signer = await provider.getSigner()
       
       // Validate recipient address
@@ -77,7 +73,8 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
       // Create transaction
       const tx = await signer.sendTransaction({
         to: recipient,
-        value: amountInWei
+        value: amountInWei,
+        chainId: parseInt(MONAD_NETWORK.chainId, 16) // Explicitly set chainId
       })
 
       console.log('Transaction sent:', tx.hash)
