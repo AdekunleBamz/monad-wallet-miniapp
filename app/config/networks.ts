@@ -6,6 +6,9 @@ export const MONAD_NETWORK = {
     symbol: 'MON',
     decimals: 18
   },
-  rpcUrls: ['https://monad-testnet.drpc.org'],
-  blockExplorerUrls: ['https://testnet.monadexplorer.com']
+  rpcUrls: ['https://rpc.testnet.monad.xyz'],
+  blockExplorerUrls: ['https://testnet.monadexplorer.com'],
+  // Add these fields to ensure proper network addition in wallets
+  iconUrls: ['https://testnet.monadexplorer.com/favicon.ico'],
+  shortName: 'monad-testnet'
 } 
