@@ -5,6 +5,17 @@ import { ethers } from 'ethers'
 import { WalletBalance } from './components/WalletBalance'
 import { SendTokens } from './components/SendTokens'
 import { ConnectWallet } from './components/ConnectWallet'
+import { SwapTokens } from './components/SwapTokens'
+
+// Forecast Mini App initialization
+declare global {
+  interface Window {
+    forecast?: {
+      ready: () => void;
+      isReady: boolean;
+    };
+  }
+}
 
 // Monad network configuration
 const MONAD_NETWORK = {
@@ -24,6 +35,28 @@ export default function Home() {
   const [balance, setBalance] = useState<string>('0')
   const [isConnected, setIsConnected] = useState(false)
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false)
+  const [isForecastReady, setIsForecastReady] = useState(false)
+
+  // Initialize Forecast Mini App
+  useEffect(() => {
+    const initializeForecast = () => {
+      // Check if we're in the Forecast Mini App environment
+      if (window.forecast) {
+        console.log('Forecast Mini App environment detected')
+        // Signal that the app is ready
+        window.forecast.ready()
+        setIsForecastReady(true)
+      } else {
+        console.log('Running in standalone mode')
+        setIsForecastReady(true)
+      }
+    }
+
+    // Wait for the window object to be available
+    if (typeof window !== 'undefined') {
+      initializeForecast()
+    }
+  }, [])
 
   const checkNetwork = async () => {
     if (typeof window.ethereum !== 'undefined') {
@@ -226,10 +259,22 @@ export default function Home() {
     }
   }
 
+  // Show loading state while initializing
+  if (!isForecastReady) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-24">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg">Initializing...</p>
+        </div>
+      </main>
+    )
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold text-center mb-8">
+    <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-24">
+      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
+        <h1 className="text-2xl md:text-4xl font-bold text-center mb-8">
           Monad Wallet Mini App
         </h1>
         
@@ -256,7 +301,10 @@ export default function Home() {
               </button>
             </div>
             <WalletBalance address={address} balance={balance} />
-            <SendTokens address={address} onTransactionComplete={refreshBalance} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+              <SendTokens address={address} onTransactionComplete={refreshBalance} />
+              <SwapTokens address={address} onTransactionComplete={refreshBalance} />
+            </div>
           </div>
         )}
       </div>
