@@ -1,0 +1,6 @@
+{
+  "name": "Monad Wallet Mini App",
+  "description": "A simple token wallet (connect, view balance, send, and swap tokens) for Monad Testnet.",
+  "icon": "https://monad-wallet-miniapp.vercel.app/icon.png",
+  "launch_url": "https://monad-wallet-miniapp.vercel.app/launch"
+} 
