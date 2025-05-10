@@ -56,33 +56,70 @@ export default function Home() {
   }, [])
 
   const fetchBalance = async (walletAddress: string) => {
-    console.log('Fetching balance for address:', walletAddress)
+    console.log('Starting balance fetch for address:', walletAddress)
     try {
+      // First verify the wallet is connected
+      if (!window.ethereum) {
+        throw new Error('No ethereum provider found')
+      }
+
       // Create provider with explicit network configuration
       const provider = new ethers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0], {
         name: MONAD_NETWORK.chainName,
-        chainId: parseInt(MONAD_NETWORK.chainId, 16)
+        chainId: parseInt(MONAD_NETWORK.chainId, 16),
+        _defaultProvider: (providers) => new providers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
       })
 
-      console.log('Provider created with RPC URL:', MONAD_NETWORK.rpcUrls[0])
-      
-      // Get network info to verify connection
-      const network = await provider.getNetwork()
-      console.log('Connected to network:', {
-        name: network.name,
-        chainId: network.chainId.toString(),
-        expectedChainId: MONAD_NETWORK.chainId
+      console.log('Provider created with config:', {
+        rpcUrl: MONAD_NETWORK.rpcUrls[0],
+        chainName: MONAD_NETWORK.chainName,
+        chainId: MONAD_NETWORK.chainId
       })
 
-      // Fetch balance
-      console.log('Requesting balance...')
+      // Verify network connection
+      try {
+        const network = await provider.getNetwork()
+        console.log('Provider network info:', {
+          name: network.name,
+          chainId: network.chainId.toString(16),
+          expectedChainId: MONAD_NETWORK.chainId
+        })
+
+        // Verify we're connected to the correct network
+        if (network.chainId.toString(16) !== MONAD_NETWORK.chainId.replace('0x', '')) {
+          console.error('Network mismatch:', {
+            actual: network.chainId.toString(16),
+            expected: MONAD_NETWORK.chainId.replace('0x', '')
+          })
+          throw new Error('Connected to wrong network')
+        }
+      } catch (networkError) {
+        console.error('Network verification failed:', networkError)
+        throw networkError
+      }
+
+      // Verify address format
+      if (!ethers.isAddress(walletAddress)) {
+        throw new Error('Invalid wallet address format')
+      }
+
+      console.log('Fetching balance for address:', walletAddress)
       const balance = await provider.getBalance(walletAddress)
-      console.log('Raw balance:', balance.toString())
-      
+      console.log('Raw balance from provider:', balance.toString())
+
+      if (balance === undefined || balance === null) {
+        throw new Error('Balance fetch returned null or undefined')
+      }
+
       const formattedBalance = ethers.formatEther(balance)
       console.log('Formatted balance:', formattedBalance)
-      
+
+      if (isNaN(parseFloat(formattedBalance))) {
+        throw new Error('Invalid balance format')
+      }
+
       setBalance(formattedBalance)
+      console.log('Balance state updated successfully')
     } catch (error) {
       console.error('Detailed balance fetch error:', error)
       if (error instanceof Error) {
@@ -90,39 +127,51 @@ export default function Home() {
         console.error('Error message:', error.message)
         console.error('Error stack:', error.stack)
       }
-      // Set balance to 0 on error
       setBalance('0')
     }
   }
 
   const checkNetwork = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        console.log('Checking network...')
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-        console.log('Current chainId:', chainId, 'Expected:', MONAD_NETWORK.chainId)
-        
-        // Compare chainIds after converting to lowercase and removing '0x' prefix
-        const normalizedCurrentChainId = chainId.toLowerCase().replace('0x', '')
-        const normalizedExpectedChainId = MONAD_NETWORK.chainId.toLowerCase().replace('0x', '')
-        console.log('Normalized chainIds:', { current: normalizedCurrentChainId, expected: normalizedExpectedChainId })
-        
-        const isCorrect = normalizedCurrentChainId === normalizedExpectedChainId
-        console.log('Is correct network:', isCorrect)
-        
-        setIsCorrectNetwork(isCorrect)
-        if (isCorrect && address) {
-          console.log('Network is correct, fetching balance...')
-          await fetchBalance(address)
-        } else {
-          console.log('Network is incorrect or no address available')
-        }
-      } catch (error) {
-        console.error('Error checking network:', error)
-        setIsCorrectNetwork(false)
+    console.log('Starting network check...')
+    if (typeof window.ethereum === 'undefined') {
+      console.error('No ethereum provider available')
+      setIsCorrectNetwork(false)
+      return
+    }
+
+    try {
+      // Get current chain ID
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+      console.log('Current chainId from wallet:', chainId)
+      console.log('Expected chainId:', MONAD_NETWORK.chainId)
+
+      // Normalize chain IDs for comparison
+      const normalizedCurrentChainId = chainId.toLowerCase().replace('0x', '')
+      const normalizedExpectedChainId = MONAD_NETWORK.chainId.toLowerCase().replace('0x', '')
+      
+      console.log('Normalized chainIds:', {
+        current: normalizedCurrentChainId,
+        expected: normalizedExpectedChainId
+      })
+
+      const isCorrect = normalizedCurrentChainId === normalizedExpectedChainId
+      console.log('Network check result:', isCorrect)
+
+      setIsCorrectNetwork(isCorrect)
+      
+      if (isCorrect && address) {
+        console.log('Network is correct, proceeding with balance fetch...')
+        await fetchBalance(address)
+      } else {
+        console.log('Network check complete:', {
+          isCorrect,
+          hasAddress: !!address,
+          address
+        })
       }
-    } else {
-      console.log('No ethereum provider available')
+    } catch (error) {
+      console.error('Network check error:', error)
+      setIsCorrectNetwork(false)
     }
   }
 
@@ -282,31 +331,49 @@ export default function Home() {
 
     const handleChainChanged = async (chainId: string) => {
       console.log('Chain changed event received:', chainId)
-      const normalizedCurrentChainId = chainId.toLowerCase().replace('0x', '')
-      const normalizedExpectedChainId = MONAD_NETWORK.chainId.toLowerCase().replace('0x', '')
-      const isCorrect = normalizedCurrentChainId === normalizedExpectedChainId
-      
-      console.log('Chain change details:', {
-        current: normalizedCurrentChainId,
-        expected: normalizedExpectedChainId,
-        isCorrect
-      })
-      
-      setIsCorrectNetwork(isCorrect)
-      if (isCorrect && address) {
-        console.log('Network is correct after change, fetching balance...')
-        await fetchBalance(address)
+      try {
+        const normalizedCurrentChainId = chainId.toLowerCase().replace('0x', '')
+        const normalizedExpectedChainId = MONAD_NETWORK.chainId.toLowerCase().replace('0x', '')
+        
+        console.log('Chain change details:', {
+          current: normalizedCurrentChainId,
+          expected: normalizedExpectedChainId
+        })
+
+        const isCorrect = normalizedCurrentChainId === normalizedExpectedChainId
+        console.log('Is correct network after change:', isCorrect)
+
+        setIsCorrectNetwork(isCorrect)
+        
+        if (isCorrect && address) {
+          console.log('Network is correct after change, fetching balance...')
+          await fetchBalance(address)
+        } else {
+          console.log('Network change handled:', {
+            isCorrect,
+            hasAddress: !!address,
+            address
+          })
+        }
+      } catch (error) {
+        console.error('Error handling chain change:', error)
+        setIsCorrectNetwork(false)
       }
     }
 
     const handleAccountsChanged = async (accounts: string[]) => {
       console.log('Accounts changed event received:', accounts)
-      if (accounts.length > 0) {
-        console.log('Setting new address:', accounts[0])
-        setAddress(accounts[0])
-        await checkNetwork()
-      } else {
-        console.log('No accounts available, disconnecting...')
+      try {
+        if (accounts.length > 0) {
+          console.log('Setting new address:', accounts[0])
+          setAddress(accounts[0])
+          await checkNetwork()
+        } else {
+          console.log('No accounts available, disconnecting...')
+          disconnectWallet()
+        }
+      } catch (error) {
+        console.error('Error handling account change:', error)
         disconnectWallet()
       }
     }

@@ -10,5 +10,9 @@ export const MONAD_NETWORK = {
   blockExplorerUrls: ['https://testnet.monadexplorer.com'],
   // Add these fields to ensure proper network addition in wallets
   iconUrls: ['https://testnet.monadexplorer.com/favicon.ico'],
-  shortName: 'monad-testnet'
+  shortName: 'monad-testnet',
+  // Add these fields for ethers.js compatibility
+  _defaultProvider: (providers: any) => new providers.JsonRpcProvider('https://rpc.testnet.monad.xyz'),
+  // Ensure chainId is properly formatted for ethers.js
+  _chainId: 10143
 } 
