@@ -52,12 +52,17 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
         throw new Error('No wallet found!')
       }
 
-      // Force the provider to use our RPC URL
+      // Create a provider that uses our RPC URL
       const provider = new ethers.BrowserProvider(window.ethereum, {
         name: MONAD_NETWORK.chainName,
-        chainId: parseInt(MONAD_NETWORK.chainId, 16),
-        _defaultProvider: (providers) => new providers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
+        chainId: parseInt(MONAD_NETWORK.chainId, 16)
       })
+
+      // Verify we're on the correct network
+      const network = await provider.getNetwork()
+      if (network.chainId !== parseInt(MONAD_NETWORK.chainId, 16)) {
+        throw new Error('Please switch to Monad Testnet')
+      }
 
       const signer = await provider.getSigner()
       
@@ -69,11 +74,11 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
       // Convert amount to Wei
       const amountInWei = ethers.parseEther(amount)
       
-      // Create transaction
+      // Create transaction with explicit network parameters
       const tx = await signer.sendTransaction({
         to: recipient,
         value: amountInWei,
-        chainId: parseInt(MONAD_NETWORK.chainId, 16) // Explicitly set chainId
+        chainId: parseInt(MONAD_NETWORK.chainId, 16)
       })
 
       console.log('Transaction sent:', tx.hash)
