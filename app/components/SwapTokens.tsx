@@ -114,9 +114,9 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
         : [TOKENS[fromToken], TOKENS[toToken]]
 
       // Calculate minimum amount out with slippage
-      const minAmountOut = ethers.parseEther(estimatedOutput)
-        .mul(1000 - Math.floor(parseFloat(slippage) * 10))
-        .div(1000)
+      const minAmountOut = (BigInt(ethers.parseEther(estimatedOutput)) * 
+        BigInt(1000 - Math.floor(parseFloat(slippage) * 10))) / 
+        BigInt(1000)
 
       const deadline = Math.floor(Date.now() / 1000) + 300 // 5 minutes
 
