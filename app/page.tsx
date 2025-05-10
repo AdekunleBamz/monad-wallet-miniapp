@@ -8,9 +8,13 @@ import { ConnectWallet } from './components/ConnectWallet'
 import { SwapTokens } from './components/SwapTokens'
 import { MONAD_NETWORK } from './config/networks'
 
-// Forecast Mini App initialization
+// Wapcast Mini App initialization
 declare global {
   interface Window {
+    wapcast?: {
+      ready: () => void;
+      isReady: boolean;
+    };
     forecast?: {
       ready: () => void;
       isReady: boolean;
@@ -23,26 +27,31 @@ export default function Home() {
   const [balance, setBalance] = useState<string>('0')
   const [isConnected, setIsConnected] = useState(false)
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false)
-  const [isForecastReady, setIsForecastReady] = useState(false)
+  const [isWapcastReady, setIsWapcastReady] = useState(false)
 
-  // Initialize Forecast Mini App
+  // Initialize Wapcast Mini App
   useEffect(() => {
-    const initializeForecast = () => {
-      // Check if we're in the Forecast Mini App environment
-      if (window.forecast) {
-        console.log('Forecast Mini App environment detected')
+    const initializeWapcast = () => {
+      // Check if we're in the Wapcast Mini App environment
+      if (window.wapcast) {
+        console.log('Wapcast Mini App environment detected')
         // Signal that the app is ready
+        window.wapcast.ready()
+        setIsWapcastReady(true)
+      } else if (window.forecast) {
+        // Fallback to Forecast for backward compatibility
+        console.log('Forecast Mini App environment detected')
         window.forecast.ready()
-        setIsForecastReady(true)
+        setIsWapcastReady(true)
       } else {
         console.log('Running in standalone mode')
-        setIsForecastReady(true)
+        setIsWapcastReady(true)
       }
     }
 
     // Wait for the window object to be available
     if (typeof window !== 'undefined') {
-      initializeForecast()
+      initializeWapcast()
     }
   }, [])
 
@@ -248,7 +257,7 @@ export default function Home() {
   }
 
   // Show loading state while initializing
-  if (!isForecastReady) {
+  if (!isWapcastReady) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-24">
         <div className="text-center">
@@ -260,7 +269,7 @@ export default function Home() {
   }
 
   // If in Forecast/Wapcast environment, show a debug message
-  if (typeof window !== 'undefined' && window.forecast && isForecastReady) {
+  if (typeof window !== 'undefined' && window.forecast && isWapcastReady) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-24">
         <div className="text-center">
@@ -271,38 +280,42 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
-        <h1 className="text-2xl md:text-4xl font-bold text-center mb-8">
-          Monad Wallet Mini App
-        </h1>
+    <main className="min-h-screen p-4 md:p-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold text-center mb-8">Monad Wallet Mini App</h1>
         
         {!isConnected ? (
           <ConnectWallet onConnect={connectWallet} />
-        ) : !isCorrectNetwork ? (
-          <div className="text-center">
-            <p className="text-red-500 mb-4">Please switch to Monad Testnet</p>
-            <button
-              onClick={switchToMonadNetwork}
-              className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200"
-            >
-              Switch to Monad Testnet
-            </button>
-          </div>
         ) : (
-          <div className="space-y-8">
-            <div className="flex justify-end">
-              <button
-                onClick={disconnectWallet}
-                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200"
-              >
-                Disconnect Wallet
-              </button>
-            </div>
-            <WalletBalance address={address} balance={balance} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-              <SendTokens address={address} onTransactionComplete={refreshBalance} />
-              <SwapTokens address={address} onTransactionComplete={refreshBalance} />
+          <div className="space-y-6">
+            <WalletBalance 
+              address={address} 
+              balance={balance} 
+              onDisconnect={disconnectWallet}
+              onRefresh={refreshBalance}
+            />
+            
+            {!isCorrectNetwork && (
+              <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg p-4 text-center">
+                <p className="text-yellow-200">Please switch to Monad Network</p>
+                <button
+                  onClick={switchToMonadNetwork}
+                  className="mt-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
+                >
+                  Switch Network
+                </button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SendTokens 
+                address={address} 
+                onTransactionComplete={refreshBalance}
+              />
+              <SwapTokens 
+                address={address}
+                onTransactionComplete={refreshBalance}
+              />
             </div>
           </div>
         )}
