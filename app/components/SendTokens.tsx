@@ -60,7 +60,8 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
 
       // Verify we're on the correct network
       const network = await provider.getNetwork()
-      if (network.chainId !== parseInt(MONAD_NETWORK.chainId, 16)) {
+      const expectedChainId = BigInt(parseInt(MONAD_NETWORK.chainId, 16))
+      if (network.chainId !== expectedChainId) {
         throw new Error('Please switch to Monad Testnet')
       }
 
