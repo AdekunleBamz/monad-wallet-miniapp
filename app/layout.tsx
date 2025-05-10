@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Monad Wallet Mini App',
   description: 'A simple wallet interface for Monad blockchain',
-  manifest: '/manifest.json',
+  manifest: '/manifest.json/route',
   viewport: {
     width: 'device-width',
     initialScale: 1,

@@ -1,4 +1,6 @@
-{
+import { NextResponse } from 'next/server'
+
+const manifest = {
   "id": "monad-wallet-miniapp",
   "name": "Monad Wallet Mini App",
   "description": "A simple token wallet (connect, view balance, send, and swap tokens) for Monad Testnet.",
@@ -35,4 +37,13 @@
   "background_color": "#000000",
   "start_url": "/",
   "scope": "/"
+}
+
+export async function GET() {
+  return new NextResponse(JSON.stringify(manifest), {
+    headers: {
+      'Content-Type': 'application/manifest+json',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  })
 } 
