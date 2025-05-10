@@ -85,9 +85,14 @@ export default function Home() {
       // Request account access with a specific request
       console.log('Requesting account access...')
       try {
-        // First try to disconnect from the provider if possible
-        if (window.ethereum.disconnect) {
-          await window.ethereum.disconnect()
+        // Try to disconnect using a safe method
+        const provider = window.ethereum
+        if (provider && typeof provider.request === 'function') {
+          try {
+            await provider.request({ method: 'wallet_disconnect' })
+          } catch (e) {
+            console.log('Wallet disconnect not supported by provider')
+          }
         }
       } catch (e) {
         console.log('Disconnect not supported by provider')
@@ -146,10 +151,11 @@ export default function Home() {
     setIsConnected(false)
     setIsCorrectNetwork(false)
     
-    // Try to disconnect from the provider if possible
-    if (window.ethereum?.disconnect) {
+    // Try to disconnect using a safe method
+    if (window.ethereum && typeof window.ethereum.request === 'function') {
       try {
-        window.ethereum.disconnect()
+        window.ethereum.request({ method: 'wallet_disconnect' })
+          .catch(e => console.log('Provider disconnect not supported'))
       } catch (e) {
         console.log('Provider disconnect not supported')
       }
