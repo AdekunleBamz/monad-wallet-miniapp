@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
+import { MONAD_NETWORK } from '../config/networks'
 
 // Pandaria DEX Router Contract ABI (minimal for swap functionality)
 const ROUTER_ABI = [

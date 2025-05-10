@@ -6,6 +6,7 @@ import { WalletBalance } from './components/WalletBalance'
 import { SendTokens } from './components/SendTokens'
 import { ConnectWallet } from './components/ConnectWallet'
 import { SwapTokens } from './components/SwapTokens'
+import { MONAD_NETWORK } from './config/networks'
 
 // Forecast Mini App initialization
 declare global {
@@ -15,19 +16,6 @@ declare global {
       isReady: boolean;
     };
   }
-}
-
-// Monad network configuration
-const MONAD_NETWORK = {
-  chainId: '0x279F', // 10143 in hex
-  chainName: 'Monad Testnet',
-  nativeCurrency: {
-    name: 'MONAD',
-    symbol: 'MON',
-    decimals: 18
-  },
-  rpcUrls: ['https://monad-testnet.drpc.org'],
-  blockExplorerUrls: ['https://testnet.monadexplorer.com']
 }
 
 export default function Home() {
