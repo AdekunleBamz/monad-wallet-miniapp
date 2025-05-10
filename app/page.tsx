@@ -259,6 +259,17 @@ export default function Home() {
     )
   }
 
+  // If in Forecast/Wapcast environment, show a debug message
+  if (typeof window !== 'undefined' && window.forecast && isForecastReady) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-24">
+        <div className="text-center">
+          <p className="text-lg">Hello Wapcast (Forecast Mini App detected)</p>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">

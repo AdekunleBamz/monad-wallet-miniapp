@@ -6,7 +6,33 @@
   "icon": "https://monad-wallet-miniapp.vercel.app/icon.png",
   "launch_url": "https://monad-wallet-miniapp.vercel.app/",
   "developer": {
-    "name": "Your Name or Team",
+    "name": "Monad Wallet Team",
     "url": "https://monad-wallet-miniapp.vercel.app/"
-  }
+  },
+  "permissions": [
+    "camera",
+    "geolocation",
+    "notifications"
+  ],
+  "categories": ["finance", "utilities"],
+  "screenshots": [
+    {
+      "src": "https://monad-wallet-miniapp.vercel.app/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Wallet",
+      "url": "/",
+      "description": "Open the Monad Wallet"
+    }
+  ],
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#6366f1",
+  "background_color": "#000000",
+  "start_url": "/",
+  "scope": "/"
 } 
