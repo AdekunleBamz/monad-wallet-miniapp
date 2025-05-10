@@ -64,10 +64,9 @@ export default function Home() {
       }
 
       // Create provider with explicit network configuration
-      const provider = new ethers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0], {
+      const provider = new ethers.providers.Web3Provider(window.ethereum, {
         name: MONAD_NETWORK.chainName,
         chainId: parseInt(MONAD_NETWORK.chainId, 16),
-        _defaultProvider: (providers) => new providers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
       })
 
       console.log('Provider created with config:', {
