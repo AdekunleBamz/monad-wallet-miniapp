@@ -34,6 +34,9 @@ export default function Home() {
 
   const switchToMonadNetwork = async () => {
     console.log('Attempting to switch network...')
+    if (typeof window === 'undefined' || typeof window.ethereum === 'undefined') {
+      throw new Error('No ethereum provider found')
+    }
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
@@ -46,6 +49,9 @@ export default function Home() {
       if (switchError.code === 4902) {
         console.log('Network not found, attempting to add...')
         try {
+          if (typeof window === 'undefined' || typeof window.ethereum === 'undefined') {
+            throw new Error('No ethereum provider found')
+          }
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [MONAD_NETWORK],
@@ -65,7 +71,7 @@ export default function Home() {
   const connectWallet = async () => {
     console.log('Starting wallet connection...')
     try {
-      if (typeof window.ethereum === 'undefined') {
+      if (typeof window === 'undefined' || typeof window.ethereum === 'undefined') {
         console.error('No ethereum provider found')
         throw new Error('Please install a Web3 wallet!')
       }
@@ -203,7 +209,7 @@ export default function Home() {
 
   // Listen for network changes
   useEffect(() => {
-    if (typeof window.ethereum === 'undefined') return
+    if (typeof window === 'undefined' || typeof window.ethereum === 'undefined') return
 
     const handleChainChanged = async (chainId: string) => {
       console.log('Chain changed:', chainId)
@@ -221,12 +227,13 @@ export default function Home() {
       }
     }
 
-    window.ethereum.on('chainChanged', handleChainChanged)
-    window.ethereum.on('accountsChanged', handleAccountsChanged)
+    const ethereum = window.ethereum
+    ethereum.on('chainChanged', handleChainChanged)
+    ethereum.on('accountsChanged', handleAccountsChanged)
 
     return () => {
-      window.ethereum.removeListener('chainChanged', handleChainChanged)
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
+      ethereum.removeListener('chainChanged', handleChainChanged)
+      ethereum.removeListener('accountsChanged', handleAccountsChanged)
     }
   }, [address])
 
