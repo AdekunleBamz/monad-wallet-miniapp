@@ -56,7 +56,6 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
       const provider = new ethers.BrowserProvider(window.ethereum, {
         name: MONAD_NETWORK.chainName,
         chainId: parseInt(MONAD_NETWORK.chainId, 16),
-        ensAddress: null,
         _defaultProvider: (providers) => new providers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
       })
 
