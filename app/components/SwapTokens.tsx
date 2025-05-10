@@ -21,6 +21,7 @@ const TOKENS = {
   USDC: '0x...', // TODO: Add actual USDC address
   // Add more tokens as needed
 }
+type TokenKey = keyof typeof TOKENS;
 
 interface SwapTokensProps {
   address: string;
@@ -28,8 +29,8 @@ interface SwapTokensProps {
 }
 
 export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) {
-  const [fromToken, setFromToken] = useState('MON') // Default to native token
-  const [toToken, setToToken] = useState('USDC')
+  const [fromToken, setFromToken] = useState<TokenKey>('WETH') // Default to WETH
+  const [toToken, setToToken] = useState<TokenKey>('USDC')
   const [amount, setAmount] = useState('')
   const [slippage, setSlippage] = useState('0.5') // Default 0.5%
   const [isLoading, setIsLoading] = useState(false)
@@ -73,7 +74,7 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
       const provider = new ethers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
       const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, provider)
 
-      const path = fromToken === 'MON' 
+      const path = fromToken === 'WETH' 
         ? [TOKENS.WETH, TOKENS[toToken]]
         : [TOKENS[fromToken], TOKENS[toToken]]
 
@@ -108,7 +109,7 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
       const router = new ethers.Contract(ROUTER_ADDRESS, ROUTER_ABI, signer)
 
       const amountIn = ethers.parseEther(amount)
-      const path = fromToken === 'MON' 
+      const path = fromToken === 'WETH' 
         ? [TOKENS.WETH, TOKENS[toToken]]
         : [TOKENS[fromToken], TOKENS[toToken]]
 
@@ -120,7 +121,7 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
       const deadline = Math.floor(Date.now() / 1000) + 300 // 5 minutes
 
       let tx
-      if (fromToken === 'MON') {
+      if (fromToken === 'WETH') {
         // Swap ETH for tokens
         tx = await router.swapExactETHForTokens(
           minAmountOut,
@@ -177,10 +178,10 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
             />
             <select
               value={fromToken}
-              onChange={(e) => setFromToken(e.target.value)}
+              onChange={(e) => setFromToken(e.target.value as TokenKey)}
               className="px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="MON">MON</option>
+              <option value="WETH">WETH</option>
               {/* Add more tokens as they become available */}
             </select>
           </div>
@@ -216,7 +217,7 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
             />
             <select
               value={toToken}
-              onChange={(e) => setToToken(e.target.value)}
+              onChange={(e) => setToToken(e.target.value as TokenKey)}
               className="px-3 py-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="USDC">USDC</option>
