@@ -41,11 +41,27 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
   // Fetch balance function
   const fetchBalance = async () => {
     try {
-      const provider = new ethers.JsonRpcProvider(MONAD_NETWORK.rpcUrls[0])
+      if (!window.ethereum) {
+        throw new Error('No ethereum provider found')
+      }
+
+      // Create provider with explicit network configuration
+      const provider = new ethers.BrowserProvider(window.ethereum, {
+        name: MONAD_NETWORK.chainName,
+        chainId: parseInt(MONAD_NETWORK.chainId, 16),
+      })
+
+      // Verify network connection
+      const network = await provider.getNetwork()
+      if (network.chainId.toString(16) !== MONAD_NETWORK.chainId.replace('0x', '')) {
+        throw new Error('Connected to wrong network')
+      }
+
       const balance = await provider.getBalance(address)
       setBalance(ethers.formatEther(balance))
     } catch (error) {
       console.error('Error fetching balance:', error)
+      setBalance('0')
     }
   }
 
