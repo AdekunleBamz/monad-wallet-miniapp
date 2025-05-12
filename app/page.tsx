@@ -64,7 +64,7 @@ export default function Home() {
       }
 
       // Create provider with explicit network configuration
-      const provider = new ethers.providers.Web3Provider(window.ethereum, {
+      const provider = new ethers.BrowserProvider(window.ethereum, {
         name: MONAD_NETWORK.chainName,
         chainId: parseInt(MONAD_NETWORK.chainId, 16),
       })
