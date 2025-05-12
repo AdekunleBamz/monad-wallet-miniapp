@@ -25,10 +25,11 @@ type TokenKey = keyof typeof TOKENS;
 
 interface SwapTokensProps {
   address: string;
+  balance: string;
   onTransactionComplete: () => void;
 }
 
-export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) {
+export function SwapTokens({ address, balance, onTransactionComplete }: SwapTokensProps) {
   const [fromToken, setFromToken] = useState<TokenKey>('MON') // Default to MON
   const [toToken, setToToken] = useState<TokenKey>('USDC')
   const [amount, setAmount] = useState('')
@@ -36,34 +37,6 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [estimatedOutput, setEstimatedOutput] = useState('0')
-  const [balance, setBalance] = useState('0')
-
-  // Fetch balance function
-  const fetchBalance = async () => {
-    try {
-      if (!window.ethereum) {
-        throw new Error('No ethereum provider found')
-      }
-
-      // Create provider with explicit network configuration
-      const provider = new ethers.BrowserProvider(window.ethereum, {
-        name: MONAD_NETWORK.chainName,
-        chainId: parseInt(MONAD_NETWORK.chainId, 16),
-      })
-
-      // Verify network connection
-      const network = await provider.getNetwork()
-      if (network.chainId.toString(16) !== MONAD_NETWORK.chainId.replace('0x', '')) {
-        throw new Error('Connected to wrong network')
-      }
-
-      const balance = await provider.getBalance(address)
-      setBalance(ethers.formatEther(balance))
-    } catch (error) {
-      console.error('Error fetching balance:', error)
-      setBalance('0')
-    }
-  }
 
   // Set max amount
   const setMaxAmount = () => {
@@ -71,13 +44,6 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
     const maxAmount = parseFloat(balance) - 0.01
     setAmount(maxAmount > 0 ? maxAmount.toString() : '0')
   }
-
-  // Fetch balance on mount and when address changes
-  useEffect(() => {
-    if (address) {
-      fetchBalance()
-    }
-  }, [address])
 
   // Estimate output amount
   const estimateOutput = async (inputAmount: string) => {
@@ -200,9 +166,6 @@ export function SwapTokens({ address, onTransactionComplete }: SwapTokensProps) 
               <option value="MON">MON</option>
               {/* Add more tokens as they become available */}
             </select>
-          </div>
-          <div className="text-sm text-gray-400 mt-1">
-            Balance: {balance} MON
           </div>
         </div>
 

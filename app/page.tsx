@@ -409,10 +409,12 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SendTokens 
                 address={address} 
+                balance={balance}
                 onTransactionComplete={refreshBalance}
               />
               <SwapTokens 
                 address={address}
+                balance={balance}
                 onTransactionComplete={refreshBalance}
               />
             </div>

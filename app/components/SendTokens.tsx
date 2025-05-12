@@ -1,47 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ethers } from 'ethers'
 import { MONAD_NETWORK } from '../config/networks'
 
 interface SendTokensProps {
   address: string;
+  balance: string;
   onTransactionComplete: () => void;
 }
 
-export function SendTokens({ address, onTransactionComplete }: SendTokensProps) {
+export function SendTokens({ address, balance, onTransactionComplete }: SendTokensProps) {
   const [amount, setAmount] = useState('')
   const [recipient, setRecipient] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [balance, setBalance] = useState('0')
-
-  // Fetch balance function
-  const fetchBalance = async () => {
-    try {
-      if (!window.ethereum) {
-        throw new Error('No ethereum provider found')
-      }
-
-      // Create provider with explicit network configuration
-      const provider = new ethers.BrowserProvider(window.ethereum, {
-        name: MONAD_NETWORK.chainName,
-        chainId: parseInt(MONAD_NETWORK.chainId, 16),
-      })
-
-      // Verify network connection
-      const network = await provider.getNetwork()
-      if (network.chainId.toString(16) !== MONAD_NETWORK.chainId.replace('0x', '')) {
-        throw new Error('Connected to wrong network')
-      }
-
-      const balance = await provider.getBalance(address)
-      setBalance(ethers.formatEther(balance))
-    } catch (error) {
-      console.error('Error fetching balance:', error)
-      setBalance('0')
-    }
-  }
 
   // Set max amount
   const setMaxAmount = () => {
@@ -49,13 +22,6 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
     const maxAmount = parseFloat(balance) - 0.01
     setAmount(maxAmount > 0 ? maxAmount.toString() : '0')
   }
-
-  // Fetch balance on mount and when address changes
-  useEffect(() => {
-    if (address) {
-      fetchBalance()
-    }
-  }, [address])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -156,9 +122,6 @@ export function SendTokens({ address, onTransactionComplete }: SendTokensProps) 
               min="0"
               required
             />
-            <div className="absolute right-3 top-2 text-sm text-gray-400">
-              Balance: {balance} MON
-            </div>
           </div>
         </div>
         <button
