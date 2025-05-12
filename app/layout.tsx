@@ -5,34 +5,20 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Monad Wallet Mini App',
-  description: 'A simple wallet interface for Monad blockchain',
-  manifest: '/api/manifest',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+  title: 'Monad Wallet',
+  description: 'A simple and secure wallet for the Monad blockchain',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+  themeColor: '#000000',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
   openGraph: {
+    title: 'Monad Wallet',
+    description: 'A simple and secure wallet for the Monad blockchain',
     type: 'website',
-    title: 'Monad Wallet Mini App',
-    description: 'A simple wallet interface for Monad blockchain',
-    url: 'https://monad-wallet-miniapp.vercel.app',
-    images: [
-      {
-        url: 'https://monad-wallet-miniapp.vercel.app/icon.png',
-        width: 512,
-        height: 512,
-        alt: 'Monad Wallet Icon',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Monad Wallet Mini App',
-    description: 'A simple wallet interface for Monad blockchain',
-    images: ['https://monad-wallet-miniapp.vercel.app/icon.png'],
+    images: ['/icon.png'],
   },
 }
 
@@ -44,13 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="theme-color" content="#6366f1" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={`${inter.className} bg-background text-white min-h-screen`}>
-        {children}
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 } 

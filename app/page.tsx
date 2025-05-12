@@ -8,51 +8,56 @@ import { ConnectWallet } from './components/ConnectWallet'
 import { SwapTokens } from './components/SwapTokens'
 import { MONAD_NETWORK } from './config/networks'
 
-// Wapcast Mini App initialization
-declare global {
-  interface Window {
-    wapcast?: {
-      ready: () => void;
-      isReady: boolean;
-    };
-    forecast?: {
-      ready: () => void;
-      isReady: boolean;
-    };
-  }
-}
-
 export default function Home() {
   const [address, setAddress] = useState<string>('')
   const [balance, setBalance] = useState<string>('0')
   const [isConnected, setIsConnected] = useState(false)
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false)
-  const [isWapcastReady, setIsWapcastReady] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Initialize Wapcast Mini App
+  // Check wallet connection on page load
   useEffect(() => {
-    const initializeWapcast = () => {
-      // Check if we're in the Wapcast Mini App environment
-      if (window.wapcast) {
-        console.log('Wapcast Mini App environment detected')
-        // Signal that the app is ready
-        window.wapcast.ready()
-        setIsWapcastReady(true)
-      } else if (window.forecast) {
-        // Fallback to Forecast for backward compatibility
-        console.log('Forecast Mini App environment detected')
-        window.forecast.ready()
-        setIsWapcastReady(true)
-      } else {
-        console.log('Running in standalone mode')
-        setIsWapcastReady(true)
+    const checkConnection = async () => {
+      try {
+        if (typeof window.ethereum === 'undefined') {
+          console.log('No ethereum provider available')
+          setIsLoading(false)
+          return
+        }
+
+        // Only check if we're already connected, don't request accounts
+        const isConnected = window.ethereum.isConnected?.() || false
+        if (!isConnected) {
+          console.log('Wallet not connected')
+          setIsLoading(false)
+          return
+        }
+
+        // If connected, get the current account
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        console.log('Initial accounts check:', accounts)
+
+        if (accounts && accounts.length > 0) {
+          setAddress(accounts[0])
+          setIsConnected(true)
+          
+          // Check network
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+          console.log('Initial network check:', chainId)
+          setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
+          
+          // Fetch balance
+          await fetchBalance(accounts[0])
+        }
+      } catch (error) {
+        console.error('Error checking wallet connection:', error)
+        setIsConnected(false)
+        setAddress('')
+      } finally {
+        setIsLoading(false)
       }
     }
-
-    // Wait for the window object to be available
-    if (typeof window !== 'undefined') {
-      initializeWapcast()
-    }
+    checkConnection()
   }, [])
 
   const fetchBalance = async (walletAddress: string) => {
@@ -280,47 +285,6 @@ export default function Home() {
     setIsCorrectNetwork(false)
   }
 
-  // Check wallet connection on page load
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        if (typeof window.ethereum === 'undefined') {
-          console.log('No ethereum provider available')
-          return
-        }
-
-        // Only check if we're already connected, don't request accounts
-        const isConnected = window.ethereum.isConnected?.() || false
-        if (!isConnected) {
-          console.log('Wallet not connected')
-          return
-        }
-
-        // If connected, get the current account
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-        console.log('Initial accounts check:', accounts)
-
-        if (accounts && accounts.length > 0) {
-          setAddress(accounts[0])
-          setIsConnected(true)
-          
-          // Check network
-          const chainId = await window.ethereum.request({ method: 'eth_chainId' })
-          console.log('Initial network check:', chainId)
-          setIsCorrectNetwork(chainId === MONAD_NETWORK.chainId)
-          
-          // Fetch balance
-          await fetchBalance(accounts[0])
-        }
-      } catch (error) {
-        console.error('Error checking wallet connection:', error)
-        setIsConnected(false)
-        setAddress('')
-      }
-    }
-    checkConnection()
-  }, [])
-
   // Listen for network changes
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.ethereum === 'undefined') {
@@ -401,32 +365,23 @@ export default function Home() {
   }
 
   // Show loading state while initializing
-  if (!isWapcastReady) {
+  if (isLoading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
+      <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg">Initializing...</p>
-        </div>
-      </main>
-    )
-  }
-
-  // If in Forecast/Wapcast environment, show a debug message
-  if (typeof window !== 'undefined' && window.forecast && isWapcastReady) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <div className="text-center">
-          <p className="text-lg">Hello Wapcast (Forecast Mini App detected)</p>
+          <p className="text-lg">Loading...</p>
         </div>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen p-4 md:p-8">
+    <main className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-gray-900 to-black text-white">
       <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-center mb-8">Monad Wallet Mini App</h1>
+        <h1 className="text-3xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+          Monad Wallet
+        </h1>
         
         {!isConnected ? (
           <ConnectWallet onConnect={connectWallet} />
